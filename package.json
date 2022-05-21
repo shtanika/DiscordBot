@@ -11,7 +11,9 @@
   "author": "Tanika Shamalia",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^13.3.1",
+    "@discordjs/rest": "^0.4.1",
+    "discord-api-types": "^0.33.0",
+    "discord.js": "^13.7.0",
     "dotenv": "^16.0.1"
   }
 }
