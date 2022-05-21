@@ -1,4 +1,6 @@
 require('dotenv').config();
+console.log(process.env.BOT_TOKEN);
+
 
 // Require the necessary discord.js classes
 const { Client, Intents } = require('discord.js');
