@@ -15,6 +15,7 @@ const commands = [
         name: 'ping',
         description: 'Replies with Pong!',
     },
+
     {
         name: 'timer',
         description: 'Sets a timer for the specified duration.',
@@ -27,6 +28,7 @@ const commands = [
             },
         ],
     },
+
     {
         name: 'remind',
         description: 'Sets a reminder',
@@ -45,6 +47,21 @@ const commands = [
             }
         ],
     },
+
+    {
+        name: 'check-timer',
+        description: 'Checks time left by timer ID',
+        options: [
+            {
+                name: 'id',
+                type: 4, //INT type
+                description: 'ID of timer',
+                required: true
+            }
+        ],
+    },
+
+
     {
         name: 'help',
         description: 'Lists all available commands and their usage.',
@@ -81,17 +98,18 @@ async function handlePing(interaction) {
 // Function to handle the 'timer' command
 async function handleTimer(interaction) {
     const timeInput = interaction.options.getString('duration'); // Get the duration from the interaction
-    const timeInMs = parseTimeInput(timeInput);
+    const timeInMs = parseTimeInput(timeInput.toLowerCase());
 
     if (timeInMs > 0) {
         const timerId = timers.length + 1; // Increment timer ID
-        timers.push({ id: timerId, user: interaction.user.username, timeInMs });
+        const userTag = `<@${interaction.user.id}>`; // Tag the user
+        timers.push({ id: timerId, user: interaction.user.username, timeInMs, startTime: Date.now(), duration: timeInMs }); // Store startTime and total duration
 
         await interaction.reply(`timer ${timerId} set for ${timeInput} by ${interaction.user.username} ^_^`);
 
         // Wait for the specified duration
         setTimeout(() => {
-            interaction.followUp(`timer ${timerId} set by ${interaction.user.username} for ${timeInput} complete! :D`);
+            interaction.channel.send(`${userTag}, your timer ${timerId} set for ${timeInput} is complete! :D`);
             // Remove the completed timer from the timers array
             const timerIndex = timers.findIndex(timer => timer.id === timerId);
             if (timerIndex !== -1) {
@@ -101,6 +119,38 @@ async function handleTimer(interaction) {
     } else {
         await interaction.reply('invalid time format >:( pls use smth like "1hr 20min 30s"');
     }
+}
+
+// Function to handle the 'checktimer' command
+async function handleCheckTimer(interaction) {
+    const timerId = interaction.options.getInteger('id'); // Get the timer ID as integer
+    const timer = timers.find(timer => timer.id === timerId);
+
+    if (!timer) {
+        await interaction.reply(`timer with ID ${timerId} not found :o`);
+        return;
+    }
+
+    // Calculate time left
+    const timeElapsed = Date.now() - timer.startTime;
+    const timeLeft = timer.duration - timeElapsed;
+
+    if (timeLeft <= 0) {
+        await interaction.reply(`timer ${timerId} has alr finished :o`);
+        return;
+    }
+
+    // Convert milliseconds to hours, minutes, and seconds
+    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+    // Create a simple progress bar
+    const progressBarLength = 20; // Length of the progress bar
+    const progress = Math.min((timeElapsed / timer.duration) * progressBarLength, progressBarLength);
+    const progressBar = `[${'█'.repeat(progress)}${'░'.repeat(progressBarLength - progress)}]`;
+
+    await interaction.reply(`**timer ${timerId}** - time left: ${hours}h ${minutes}m ${seconds}s\nprogress: ${progressBar}`);
 }
 
 // Function to handle the 'remind' command
@@ -127,8 +177,9 @@ async function handleRemind(interaction) {
     await interaction.reply(`reminder set for ${reminderTime} with the message: "${reminderMessage}" ^_^`);
 
     // Schedule the reminder
+    const userTag = `<@${interaction.user.id}>`; // Tag the user
     setTimeout(() => {
-        interaction.followUp(`reminder: ${reminderMessage}`);
+        interaction.channel.send(`${userTag}, reminder: ${reminderMessage}`);
     }, timeDifference);
 }
 
@@ -139,7 +190,8 @@ async function handleHelp(interaction) {
 1. **/ping**: Replies with "Pong!".
 2. **/timer <duration>**: Sets a timer for the specified duration (e.g. "/timer 1hr 20min 30s").
 3. **/remind <time> <message>**: Sets reminder for specified date/time (e.g. "/remind 10/15 13:00 eat")
-4. **/help**: Lists all available commands and their usage.
+4. **/checktimer <id>**: Checks the remaining time of a specific timer by its ID.
+5. **/help**: Lists all available commands and their usage.
     `;
     await interaction.reply(helpMessage);
 }
@@ -225,6 +277,9 @@ client.on('interactionCreate', async (interaction) => {
         case 'help':
             await handleHelp(interaction);
             break;
+        case 'check-timer':
+            await handleCheckTimer(interaction);
+            break;
         case 'remind':
             await handleRemind(interaction);
             break;
@@ -235,6 +290,5 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 
-// Login to Discord with your client's token
+// Login to Discord with client's token
 client.login(process.env.BOT_TOKEN);
-
