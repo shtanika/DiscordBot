@@ -1,88 +1,148 @@
-require('dotenv').config();
+require('dotenv').config({ path: './src/../.env' });
 
 // Require the necessary discord.js classes
 const { Client, Intents } = require('discord.js');
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v10');
+
 
 // Create a new client instance
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
+
+// Register slash commands
+const commands = [
+    {
+        name: 'ping',
+        description: 'Replies with Pong!',
+    },
+    {
+        name: 'timer',
+        description: 'Sets a timer for the specified duration.',
+        options: [
+            {
+                type: 3, // STRING type
+                name: 'duration',
+                description: 'The duration for the timer (e.g., "1hr 20min 30s").',
+                required: true,
+            },
+        ],
+    },
+    {
+        name: 'remind',
+        description: 'Sets a reminder',
+        options: [
+            {
+                name: 'time',
+                type: 3, // STRING type
+                description: 'Time or date for the reminder (e.g., 13:31 or 10/16)',
+                required: true
+            },
+            {
+                name: 'message',
+                type: 3, // STRING type
+                description: 'The message to be reminded about',
+                required: true
+            }
+        ],
+    },
+    {
+        name: 'help',
+        description: 'Lists all available commands and their usage.',
+    },
+];
+
+const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
+
+(async () => {
+    try {
+        console.log('Started refreshing application (/) commands.');
+
+        await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
+
+        console.log('Successfully reloaded application (/) commands.');
+    } catch (error) {
+        console.error(error);
+    }
+})();
 
 // When the client is ready, run this code (only once)
 client.once('ready', () => {
 	console.log(`Logged in as ${client.user.tag}!`);
 });
 
-// Designate prefix
-const PREFIX = "!";
-
 // Array to store active timers
 const timers = [];
 
 // Function to handle the 'ping' command
-async function handlePing(message) {
-  await message.channel.send('Pong!');
+async function handlePing(interaction) {
+    await interaction.reply('Pong!');
 }
 
 // Function to handle the 'timer' command
-async function handleTimer(message, timeInput) {
-  const timeInMs = parseTimeInput(timeInput);
+async function handleTimer(interaction) {
+    const timeInput = interaction.options.getString('duration'); // Get the duration from the interaction
+    const timeInMs = parseTimeInput(timeInput);
 
-  if (timeInMs > 0) {
-      const timerId = timers.length + 1; // Increment timer ID
-      timers.push({ id: timerId, user: message.author.username, timeInMs });
-      await message.channel.send(`timer ${timerId} set for ${timeInput} by ${message.author.username} ^_^`);
+    if (timeInMs > 0) {
+        const timerId = timers.length + 1; // Increment timer ID
+        timers.push({ id: timerId, user: interaction.user.username, timeInMs });
 
-      // Wait for the specified duration
-      setTimeout(() => {
-          message.channel.send(`timer ${timerId} set by ${message.author.username} complete o: time's up for ${timeInput} :D`);
-          // Remove the completed timer from the timers array
-          const timerIndex = timers.findIndex(timer => timer.id === timerId);
-          if (timerIndex !== -1) {
-              timers.splice(timerIndex, 1); // Remove the timer from the array
-          }
-      }, timeInMs);
-  } else {
-      await message.channel.send('invalid time format >:( pls use something like "1hr 20min 30s"');
-  }
+        await interaction.reply(`timer ${timerId} set for ${timeInput} by ${interaction.user.username} ^_^`);
+
+        // Wait for the specified duration
+        setTimeout(() => {
+            interaction.followUp(`timer ${timerId} set by ${interaction.user.username} for ${timeInput} complete! :D`);
+            // Remove the completed timer from the timers array
+            const timerIndex = timers.findIndex(timer => timer.id === timerId);
+            if (timerIndex !== -1) {
+                timers.splice(timerIndex, 1); // Remove the timer from the array
+            }
+        }, timeInMs);
+    } else {
+        await interaction.reply('invalid time format >:( pls use smth like "1hr 20min 30s"');
+    }
+}
+
+// Function to handle the 'remind' command
+async function handleRemind(interaction) {
+    const timeInput = interaction.options.getString('time'); // e.g. "13:31" or "10/16 13:00"
+    const reminderMessage = interaction.options.getString('message'); // The reminder message
+
+    const reminderTime = parseReminderTime(timeInput);
+
+    if (!reminderTime) {
+        await interaction.reply('invalid time format >:( use "H:MM", "HH:MM", "MM/DD", or "MM/DD HH:MM"');
+        return;
+    }
+
+    const now = new Date();
+    const timeDifference = reminderTime - now;
+
+    if (timeDifference <= 0) {
+        await interaction.reply('the time you provided has already passed :o');
+        return;
+    }
+
+    // Reply that reminder is set
+    await interaction.reply(`reminder set for ${reminderTime} with the message: "${reminderMessage}" ^_^`);
+
+    // Schedule the reminder
+    setTimeout(() => {
+        interaction.followUp(`reminder: ${reminderMessage}`);
+    }, timeDifference);
 }
 
 // Function to handle the 'help' command
-async function handleHelp(message) {
-  const helpMessage = `
+async function handleHelp(interaction) {
+    const helpMessage = `
 **Available Commands:**
-1. **!ping**: Replies with "Pong!".
-2. **!timer <time>**: Sets a timer for the specified duration (e.g., "!timer 1hr 20min 30s").
-3. **!help**: Lists all available commands and their usage.
-  `;
-  await message.channel.send(helpMessage);
+1. **/ping**: Replies with "Pong!".
+2. **/timer <duration>**: Sets a timer for the specified duration (e.g. "/timer 1hr 20min 30s").
+3. **/remind <time> <message>**: Sets reminder for specified date/time (e.g. "/remind 10/15 13:00 eat")
+4. **/help**: Lists all available commands and their usage.
+    `;
+    await interaction.reply(helpMessage);
 }
-
-// Message event listener
-client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
-
-  // Check if the message starts with the designated prefix
-  if (!message.content.startsWith(PREFIX)) return;
-
-  const args = message.content.trim().substring(PREFIX.length).split(/\s+/);
-  const command = args[0].toLowerCase(); // Get the command
-
-  // Parse and execute the command
-  switch (command) {
-      case 'ping':
-          await handlePing(message);
-          break;
-      case 'timer':
-          const timeInput = args.slice(1).join(' '); // Get the time input
-          await handleTimer(message, timeInput);
-          break;
-      case 'help':
-          await handleHelp(message);
-          break;
-      default:
-          await message.channel.send(`Unknown command: ${command}`);
-          break;
-  }
-});
 
 // Helper function to convert the time string into milliseconds
 function parseTimeInput(input) {
@@ -105,6 +165,75 @@ function parseTimeInput(input) {
 
     return totalMilliseconds;
 }
+
+// Helper function to parse the time and date input
+function parseReminderTime(input) {
+    const now = new Date();
+
+    // Case 1: Time only (e.g., "13:31" or "9:55")
+    if (/^\d{1,2}:\d{2}$/.test(input)) { // <--- Modified regex to allow 1 or 2 digits for hours
+        const [hours, minutes] = input.split(':').map(Number);
+
+        // Ensure valid 24-hour time (hours must be between 0-23, minutes between 0-59)
+        if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+            return null; // Invalid time input
+        }
+
+        const reminderTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+
+        if (reminderTime < now) {
+            reminderTime.setDate(reminderTime.getDate() + 1); // Move to next day if time has passed today
+        }
+        return reminderTime;
+    }
+
+    // Case 2: Date only (e.g., "10/16")
+    if (/^\d{2}\/\d{2}$/.test(input)) {
+        const [month, day] = input.split('/').map(Number);
+        return new Date(now.getFullYear(), month - 1, day); // Remind at midnight
+    }
+
+    // Case 3: Date and time (e.g., "10/15 13:00" or "10/15 9:55")
+    if (/^\d{2}\/\d{2} \d{1,2}:\d{2}$/.test(input)) { // <--- Modified regex to allow 1 or 2 digits for hours
+        const [datePart, timePart] = input.split(' ');
+        const [month, day] = datePart.split('/').map(Number);
+        const [hours, minutes] = timePart.split(':').map(Number);
+
+        // Ensure valid 24-hour time (hours must be between 0-23, minutes between 0-59)
+        if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+            return null; // Invalid time input
+        }
+
+        return new Date(now.getFullYear(), month - 1, day, hours, minutes);
+    }
+
+    return null; // Invalid format
+}
+
+// Interaction event listener
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isCommand()) return;
+
+    // Parse and execute the command
+    switch (interaction.commandName) {
+        case 'ping':
+            await handlePing(interaction);
+            break;
+        case 'timer':
+            await handleTimer(interaction);
+            break;
+        case 'help':
+            await handleHelp(interaction);
+            break;
+        case 'remind':
+            await handleRemind(interaction);
+            break;
+        default:
+            await interaction.reply(`Unknown command: ${interaction.commandName}`);
+            break;
+    }
+});
+
 
 // Login to Discord with your client's token
 client.login(process.env.BOT_TOKEN);
