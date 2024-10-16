@@ -150,7 +150,7 @@ async function handleCheckTimer(interaction) {
     const progress = Math.min((timeElapsed / timer.duration) * progressBarLength, progressBarLength);
     const progressBar = `[${'█'.repeat(progress)}${'░'.repeat(progressBarLength - progress)}]`;
 
-    await interaction.reply(`**timer ${timerId}** - time left: ${hours}h ${minutes}m ${seconds}s\nprogress: ${progressBar}`);
+    await interaction.reply(`**timer ${timerId}** - time left: ${hours}:${minutes}:${seconds}\nprogress: ${progressBar}`);
 }
 
 // Function to handle the 'remind' command
