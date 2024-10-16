@@ -264,6 +264,7 @@ function parseReminderTime(input) {
 
 // Interaction event listener
 client.on('interactionCreate', async (interaction) => {
+    console.log(`Received interaction: ${interaction.commandName}`);
     if (!interaction.isCommand()) return;
 
     // Parse and execute the command
