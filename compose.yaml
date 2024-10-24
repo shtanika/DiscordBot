@@ -1,0 +1,12 @@
+version: '3.8' 
+
+services:
+  discord-bot:
+    build: .
+    container_name: bot-container  # Name the container
+    working_dir: /app  # Set working directory inside container
+    volumes:
+      - .:/app  # Mount current directory to /app in the container
+    env_file:
+      - .env # Load environment variables from .env
+    restart: unless-stopped  # Auto-restart the bot unless stopped manually

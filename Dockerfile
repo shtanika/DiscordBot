@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install the dependencies
-RUN npm install --production
+RUN npm install 
 
 # Copy the rest of the bot code into the container
 COPY . .
