@@ -48,4 +48,37 @@ async function handleTimer(interaction) {
     }
 }
 
-module.exports = { handleTimer };
+// Function to handle the 'checktimer' command
+async function handleCheckTimer(interaction) {
+    const timerId = interaction.options.getInteger('id'); // Get the timer ID as integer
+    const timer = timers.find(timer => timer.id === timerId);
+
+    if (!timer) {
+        await interaction.reply(`timer with ID ${timerId} not found :o`);
+        return;
+    }
+
+    // Calculate time left
+    const timeElapsed = Date.now() - timer.startTime;
+    const timeLeft = timer.duration - timeElapsed;
+
+    if (timeLeft <= 0) {
+        await interaction.reply(`timer ${timerId} has alr finished :o`);
+        return;
+    }
+
+    // Convert milliseconds to hours, minutes, and seconds
+    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+    // Create a simple progress bar
+    const progressBarLength = 20; // Length of the progress bar
+    const progress = Math.min((timeElapsed / timer.duration) * progressBarLength, progressBarLength);
+    const progressBar = `[${'█'.repeat(progress)}${'░'.repeat(progressBarLength - progress)}]`;
+
+    await interaction.reply(`**timer ${timerId}** - time left: ${hours}h ${minutes}m ${seconds}s \nprogress: ${progressBar}`);
+}
+
+// Export the functions so they can be used in other modules
+module.exports = { handleTimer, handleCheckTimer, parseTimeInput, timers };

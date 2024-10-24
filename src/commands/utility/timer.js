@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { handleTimer } = require('../helpers/timerHelper'); 
+const { handleTimer } = require('./helpers/timerHelper'); 
 
 module.exports = {
     data: new SlashCommandBuilder()
