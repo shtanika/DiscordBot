@@ -3,7 +3,7 @@ const { SlashCommandBuilder } = require('discord.js');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('set-timezone')
-		.setDescription('Lists all available commands and their usage.'),
+		.setDescription('Sets timezone of user.'),
 	async execute(interaction) {
         const helpMessage = `
 **Available Commands:**
