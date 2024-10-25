@@ -46,6 +46,11 @@ async function handleTimer(interaction) {
             if (timeLeft <= 0) {
                 // Timer complete
                 clearInterval(interval); // Stop updating the progress bar
+
+                // Final progress bar (force to be complete)
+                const progressBar = `[${'█'.repeat(20)}]`; // Ensure the final bar is completely filled
+                await interaction.editReply(`**timer ${timerId}** - time left: 0h 0m 0s\nprogress: ${progressBar}`);
+
                 interaction.channel.send(`${userTag}, timer ${timerId} set for ${timeInput} is complete! :D`);
                 
                 // Remove the completed timer from the timers array
@@ -69,7 +74,7 @@ async function handleTimer(interaction) {
                 const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
 
-                await interaction.editReply(`**timer ${timerId}** - time left: ${hours}h ${minutes}m ${seconds}s\nProgress: ${progressBar}`);
+                await interaction.editReply(`**timer ${timerId}** - time left: ${hours}h ${minutes}m ${seconds}s\nprogress: ${progressBar}`);
             }
         }, 1000); // Update every second
     } else {
