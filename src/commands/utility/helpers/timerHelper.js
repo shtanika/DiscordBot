@@ -1,4 +1,5 @@
 const timers = []; // Array to track active timers
+let nextTimerId = 1; // Variable to keep track of the next available timer ID
 
 // Helper function to convert the time string into milliseconds
 function parseTimeInput(input) {
@@ -28,7 +29,7 @@ async function handleTimer(interaction) {
     const timeInMs = parseTimeInput(timeInput.toLowerCase());
 
     if (timeInMs > 0) {
-        const timerId = timers.length + 1; // Increment timer ID
+        const timerId = nextTimerId++; // Assign the next available timer ID and increment nextTimerId
         const userTag = `<@${interaction.user.id}>`; // Tag the user
         timers.push({ id: timerId, user: interaction.user.username, timeInMs, startTime: Date.now(), duration: timeInMs }); // Store startTime and total duration
 
@@ -41,6 +42,11 @@ async function handleTimer(interaction) {
             const timerIndex = timers.findIndex(timer => timer.id === timerId);
             if (timerIndex !== -1) {
                 timers.splice(timerIndex, 1); // Remove the timer from the array
+            }
+
+            // Reset nextTimerId to 1 if the array is empty
+            if (timers.length === 0) {
+                nextTimerId = 1; // Reset the ID counter
             }
         }, timeInMs);
     } else {
