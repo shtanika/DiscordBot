@@ -1,3 +1,22 @@
+const userTimezones = new Map(); // Store user timezones in-memory; replace with database if needed
+
+// Function to handle 'set-timezone' command
+async function handleSetTimezone(interaction) {
+    const timezone = interaction.options.getString('timezone').toUpperCase(); // Get the timezone in uppercase
+    const userId = interaction.user.id;
+
+    // Basic validation of timezone abbreviations
+    const validTimezones = ['EST', 'CST', 'EDT', 'CEST', 'GMT', 'UTC']; 
+    if (!validTimezones.includes(timezone)) {
+        await interaction.reply(`invalid timezone: ${timezone}. pls use a valid timezone abbreviation like EST or CET :)`);
+        return;
+    }
+
+    // Store the user's timezone
+    userTimezones.set(userId, timezone);
+    await interaction.reply(`ur timezone has been set to ${timezone} :D`);
+}
+
 // Helper function to parse the time and date input
 function parseReminderTime(input) {
     const now = new Date();
@@ -72,4 +91,4 @@ async function handleRemind(interaction) {
     }, timeDifference);
 }
 
-module.exports = { handleRemind };
+module.exports = { handleSetTimezone, userTimezones, handleRemind };

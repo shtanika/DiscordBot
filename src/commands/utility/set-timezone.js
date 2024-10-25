@@ -1,18 +1,16 @@
 const { SlashCommandBuilder } = require('discord.js');
+const { handleSetTimezone } = require('./helpers/remindHelper'); // Path to remindHelper.js
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('set-timezone')
-		.setDescription('Sets timezone of user.'),
+		.setDescription('Sets the timezone of the user.')
+		.addStringOption(option =>
+            option.setName('timezone')
+                .setDescription('The timezone abbreviation (e.g., EST, CET)')
+                .setRequired(true)),
+    
 	async execute(interaction) {
-        const helpMessage = `
-**Available Commands:**
-1. **/ping**: Replies with "Pong!".
-2. **/timer <duration>**: Sets a timer for the specified duration (e.g. "/timer 1hr 20min 30s").
-3. **/remind <time> <message>**: Sets reminder for specified date/time (e.g. "/remind 10/15 13:00 eat")
-4. **/checktimer <id>**: Checks the remaining time of a specific timer by its ID.
-5. **/help**: Lists all available commands and their usage.
-    `;
-		await interaction.reply(helpMessage);
+        await handleSetTimezone(interaction); 
 	},
 };
