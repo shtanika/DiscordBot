@@ -46,7 +46,7 @@ async function handleTimer(interaction) {
             if (timeLeft <= 0) {
                 // Timer complete
                 clearInterval(interval); // Stop updating the progress bar
-                await interaction.editReply(`${userTag}, your timer ${timerId} is complete! :D`);
+                interaction.channel.send(`${userTag}, timer ${timerId} set for ${timeInput} is complete! :D`);
                 
                 // Remove the completed timer from the timers array
                 const timerIndex = timers.findIndex(timer => timer.id === timerId);
