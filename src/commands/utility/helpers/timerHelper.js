@@ -37,7 +37,7 @@ async function handleTimer(interaction) {
 
         // Wait for the specified duration
         setTimeout(() => {
-            interaction.channel.send(`${userTag}, your timer ${timerId} set for ${timeInput} is complete! :D`);
+            interaction.channel.send(`${userTag}, timer ${timerId} set for ${timeInput} is complete! :D`);
             // Remove the completed timer from the timers array
             const timerIndex = timers.findIndex(timer => timer.id === timerId);
             if (timerIndex !== -1) {
