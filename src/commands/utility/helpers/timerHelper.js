@@ -31,24 +31,47 @@ async function handleTimer(interaction) {
     if (timeInMs > 0) {
         const timerId = nextTimerId++; // Assign the next available timer ID and increment nextTimerId
         const userTag = `<@${interaction.user.id}>`; // Tag the user
-        timers.push({ id: timerId, user: interaction.user.username, timeInMs, startTime: Date.now(), duration: timeInMs }); // Store startTime and total duration
+        const startTime = Date.now()
+        const totalDuration = timeInMs;
+
+        timers.push({ id: timerId, user: interaction.user.username, timeInMs, startTime, duration: timeInMs }); // Store startTime and total duration
 
         await interaction.reply(`timer ${timerId} set for ${timeInput} by ${interaction.user.username} ^_^`);
 
-        // Wait for the specified duration
-        setTimeout(() => {
-            interaction.channel.send(`${userTag}, timer ${timerId} set for ${timeInput} is complete! :D`);
-            // Remove the completed timer from the timers array
-            const timerIndex = timers.findIndex(timer => timer.id === timerId);
-            if (timerIndex !== -1) {
-                timers.splice(timerIndex, 1); // Remove the timer from the array
-            }
+        // Function to update the progress bar
+        const interval = setInterval(async () => {
+            const timeElapsed = Date.now() - startTime;
+            const timeLeft = totalDuration - timeElapsed;
 
-            // Reset nextTimerId to 1 if the array is empty
-            if (timers.length === 0) {
-                nextTimerId = 1; // Reset the ID counter
+            if (timeLeft <= 0) {
+                // Timer complete
+                clearInterval(interval); // Stop updating the progress bar
+                await interaction.editReply(`${userTag}, your timer ${timerId} is complete! :D`);
+                
+                // Remove the completed timer from the timers array
+                const timerIndex = timers.findIndex(timer => timer.id === timerId);
+                if (timerIndex !== -1) {
+                    timers.splice(timerIndex, 1); // Remove the timer from the array
+                }
+
+                // Reset nextTimerId to 1 if the array is empty
+                if (timers.length === 0) {
+                    nextTimerId = 1; // Reset the ID counter
+                }
+            } else {
+                // Update the progress bar
+                const progressBarLength = 20; // Length of the progress bar
+                const progress = Math.min((timeElapsed / totalDuration) * progressBarLength, progressBarLength);
+                const progressBar = `[${'█'.repeat(progress)}${'░'.repeat(progressBarLength - progress)}]`;
+
+                // Convert milliseconds to hours, minutes, and seconds
+                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+                await interaction.editReply(`**timer ${timerId}** - time left: ${hours}h ${minutes}m ${seconds}s\nProgress: ${progressBar}`);
             }
-        }, timeInMs);
+        }, 1000); // Update every second
     } else {
         await interaction.reply('invalid time format >:( pls use smth like "1hr 20min 30s"');
     }
