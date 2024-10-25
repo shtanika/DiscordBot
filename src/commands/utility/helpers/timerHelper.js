@@ -31,7 +31,7 @@ async function handleTimer(interaction) {
     if (timeInMs > 0) {
         const timerId = nextTimerId++; // Assign the next available timer ID and increment nextTimerId
         const userTag = `<@${interaction.user.id}>`; // Tag the user
-        const startTime = Date.now()
+        const startTime = Date.now();
         const totalDuration = timeInMs;
 
         timers.push({ id: timerId, user: interaction.user.username, timeInMs, startTime, duration: timeInMs }); // Store startTime and total duration
@@ -43,38 +43,32 @@ async function handleTimer(interaction) {
             const timeElapsed = Date.now() - startTime;
             const timeLeft = totalDuration - timeElapsed;
 
-            if (timeLeft <= 0) {
-                // Timer complete
+            // Ensure the progress is calculated correctly at zero
+            const isComplete = timeLeft <= 0;
+            const progressBarLength = 20; // Length of the progress bar
+            const progress = isComplete ? progressBarLength : Math.floor((timeElapsed / totalDuration) * progressBarLength);
+
+            // Update the progress bar
+            const progressBar = `[${'█'.repeat(progress)}${'░'.repeat(progressBarLength - progress)}]`;
+
+            // Convert milliseconds to hours, minutes, and seconds
+            const hours = Math.floor(Math.max(timeLeft, 0) / (1000 * 60 * 60));
+            const minutes = Math.floor((Math.max(timeLeft, 0) % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((Math.max(timeLeft, 0) % (1000 * 60)) / 1000);
+
+            console.log(`Time Elapsed: ${timeElapsed}, Total Duration: ${totalDuration}, Progress: ${progress}`);
+            await interaction.editReply(`**timer ${timerId}** - time left: ${hours}h ${minutes}m ${seconds}s\nprogress: ${progressBar}`);
+
+            if (isComplete) {
                 clearInterval(interval); // Stop updating the progress bar
-
-                // Final progress bar (force to be complete)
-                const progressBar = `[${'█'.repeat(20)}]`; // Ensure the final bar is completely filled
-                await interaction.editReply(`**timer ${timerId}** - time left: 0h 0m 0s\nprogress: ${progressBar}`);
-
                 interaction.channel.send(`${userTag}, timer ${timerId} set for ${timeInput} is complete! :D`);
                 
                 // Remove the completed timer from the timers array
                 const timerIndex = timers.findIndex(timer => timer.id === timerId);
-                if (timerIndex !== -1) {
-                    timers.splice(timerIndex, 1); // Remove the timer from the array
-                }
+                if (timerIndex !== -1) timers.splice(timerIndex, 1); 
 
                 // Reset nextTimerId to 1 if the array is empty
-                if (timers.length === 0) {
-                    nextTimerId = 1; // Reset the ID counter
-                }
-            } else {
-                // Update the progress bar
-                const progressBarLength = 20; // Length of the progress bar
-                const progress = Math.min((timeElapsed / totalDuration) * progressBarLength, progressBarLength);
-                const progressBar = `[${'█'.repeat(progress)}${'░'.repeat(progressBarLength - progress)}]`;
-
-                // Convert milliseconds to hours, minutes, and seconds
-                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-                await interaction.editReply(`**timer ${timerId}** - time left: ${hours}h ${minutes}m ${seconds}s\nprogress: ${progressBar}`);
+                if (timers.length === 0) nextTimerId = 1; 
             }
         }, 1000); // Update every second
     } else {
