@@ -36,7 +36,8 @@ async function handleTimer(interaction) {
 
         timers.push({ id: timerId, user: interaction.user.username, timeInMs, startTime, duration: timeInMs }); // Store startTime and total duration
 
-        await interaction.reply(`timer ${timerId} set for ${timeInput} by ${interaction.user.username} ^_^`);
+        const initialReply = await interaction.reply(`timer ${timerId} set for ${timeInput} by ${interaction.user.username} ^_^`);
+        const messageID = initialReply.id;
 
         // Function to update the progress bar
         const interval = setInterval(async () => {
@@ -56,19 +57,26 @@ async function handleTimer(interaction) {
             const minutes = Math.floor((Math.max(timeLeft, 0) % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((Math.max(timeLeft, 0) % (1000 * 60)) / 1000);
 
-            console.log(`Time Elapsed: ${timeElapsed}, Total Duration: ${totalDuration}, Progress: ${progress}`);
-            await interaction.editReply(`**timer ${timerId}** - time left: ${hours}h ${minutes}m ${seconds}s\nprogress: ${progressBar}`);
+            try {
+                // Use message ID to edit the original message instead of interaction.editReply
+                const channel = interaction.channel;
+                const message = await channel.messages.fetch(messageID);
+                await message.edit(`**timer ${timerId}** - time left: ${hours}h ${minutes}m ${seconds}s\nprogress: ${progressBar}`);
 
-            if (isComplete) {
-                clearInterval(interval); // Stop updating the progress bar
-                interaction.channel.send(`${userTag}, timer ${timerId} set for ${timeInput} is complete! :D`);
-                
-                // Remove the completed timer from the timers array
-                const timerIndex = timers.findIndex(timer => timer.id === timerId);
-                if (timerIndex !== -1) timers.splice(timerIndex, 1); 
+                if (isComplete) {
+                    clearInterval(interval); // Stop updating the progress bar
+                    interaction.channel.send(`${userTag}, timer ${timerId} set for ${timeInput} is complete! :D`);
+                    
+                    // Remove the completed timer from the timers array
+                    const timerIndex = timers.findIndex(timer => timer.id === timerId);
+                    if (timerIndex !== -1) timers.splice(timerIndex, 1);
 
-                // Reset nextTimerId to 1 if the array is empty
-                if (timers.length === 0) nextTimerId = 1; 
+                    // Reset nextTimerId to 1 if the array is empty
+                    if (timers.length === 0) nextTimerId = 1;
+                }
+            } catch (error) {
+                console.error('Error updating timer:', error);
+                clearInterval(interval);
             }
         }, 1000); // Update every second
     } else {
